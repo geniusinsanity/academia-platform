@@ -1,0 +1,69 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  TEACHER
+  STUDENT
+}
+
+enum ResourceType {
+  LESSON
+  EXERCISE
+  SOLUTION
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role     @default(STUDENT)
+  faculty   String?
+  
+  courses   Course[] @relation("TeacherCourses")
+  enrollments Enrollment[]
+  createdAt DateTime @default(now())
+}
+
+model Course {
+  id          String   @id @default(uuid())
+  code        String   // e.g., "ASD", "ANALYSIS"
+  title       String   // e.g., "Algorithms and Data Structures"
+  description String?
+  faculty     String
+  
+  teacherId   String
+  teacher     User     @relation("TeacherCourses", fields: [teacherId], references: [id])
+  
+  files       FileResource[]
+  createdAt   DateTime @default(now())
+  enrollments Enrollment[]
+}
+
+model FileResource {
+  id          String   @id @default(uuid())
+  title       String
+  type        ResourceType
+  url         String
+  courseId    String
+  course      Course   @relation(fields: [courseId], references: [id])
+  createdAt   DateTime @default(now())
+}
+
+model Enrollment {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  courseId  String
+  course    Course   @relation(fields: [courseId], references: [id])
+  joinedAt  DateTime @default(now())
+
+  @@unique([userId, courseId])
+}
